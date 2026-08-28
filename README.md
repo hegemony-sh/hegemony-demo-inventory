@@ -7,8 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 # Hegemony Demo Inventory
 
 Git inventory source of truth for the [Hegemony](https://github.com/hegemony-sh/hegemony)
-demo: the site and device records the demo's `lab-inventory` git inventory
-provider syncs into the platform.
+demo: the site and device records that the demo's `lab-inventory` git
+inventory provider syncs into the platform.
 
 The [`hegemony-demo-data`](https://github.com/hegemony-sh/hegemony-demo-data)
 repository bootstraps the demo instance with a git repository entry pointing
@@ -50,8 +50,11 @@ uv run python scripts/validate.py
 
 `scripts/validate.py` applies the same fail-closed rules the git inventory
 plugin enforces at runtime (schema version, external-id/file-stem equality,
-required device fields, resolved site references, templated access refs), so a
-broken tree fails CI here instead of failing the demo's inventory sync.
+the plugin's required fields — non-blank `name` on sites and devices,
+`mgmt_host` on devices — resolved site references, templated access refs), so
+a broken tree fails CI here instead of failing the demo's inventory sync.
+Fields the plugin schema treats as optional (`mgmt_port`, `platform`,
+`vendor`, `model`, `site`, `role`) are optional here too.
 
 ## Making changes
 

@@ -7,8 +7,11 @@
 
 Applies the same fail-closed rules Hegemony's git inventory plugin enforces at
 runtime, so the published source of truth cannot silently drift: schema_version
-1, ``external_id`` equal to the file stem, required device fields, resolved
-site references, and templated (never literal) access-config refs.
+1, ``external_id`` equal to the file stem, the fields the plugin schema
+requires (non-blank ``name`` on sites and devices, ``mgmt_host`` on devices),
+resolved site references, and templated (never literal) access-config refs.
+Fields the plugin treats as optional (``mgmt_port``, ``platform``, ``vendor``,
+``model``, ``site``, ``role``) stay optional here too.
 
 Ported from the ``hegemony-demo-data`` repository's ``scripts/validate.py``,
 which guarded this tree before it moved into its own repository.
@@ -51,7 +54,11 @@ def _check_access_refs_templated(location: Any, access_config: Any) -> list[str]
             continue
         for key, value in section.items():
             if key.endswith("_ref") and isinstance(value, str) and not TEMPLATE_REF_RE.search(value):
-                errors.append(f"{location}: {key} must use env()/file()/secret() template syntax")
+                errors.append(
+                    f"{location}: {key} must use template syntax like"
+                    " '{{ env(...) }}', '{{ file(...) }}', or '{{ secret(...) }}'"
+                    " — never a literal value"
+                )
     return errors
 
 
@@ -65,12 +72,15 @@ def validate_inventory_tree(root: Path) -> list[str]:
     sites_root = root / "sites"
     site_files = sorted(sites_root.rglob("*.y*ml")) if sites_root.is_dir() else []
     for site_file in site_files:
+        rel = site_file.relative_to(root)
         try:
             doc = yaml.safe_load(site_file.read_text(encoding="utf-8"))
         except yaml.YAMLError as exc:
-            errors.append(f"{site_file}: invalid YAML: {exc}")
+            errors.append(f"{rel}: invalid YAML: {exc}")
             continue
-        rel = site_file.relative_to(root)
+        except (OSError, UnicodeError) as exc:
+            errors.append(f"{rel}: unreadable file: {exc}")
+            continue
         if not isinstance(doc, dict):
             errors.append(f"{rel}: expected a YAML mapping")
             continue
@@ -82,6 +92,9 @@ def validate_inventory_tree(root: Path) -> list[str]:
             errors.append(
                 f"{rel}: external_id {doc.get('external_id')!r} must equal file stem {site_file.stem!r}"
             )
+        name = doc.get("name")
+        if not (isinstance(name, str) and name.strip()):
+            errors.append(f"{rel}: site is missing a non-blank name")
         site_paths.add(_derive_site_path(sites_root, site_file))
     if not site_files:
         errors.append(f"{root}: no site files found under sites/")
@@ -89,12 +102,15 @@ def validate_inventory_tree(root: Path) -> list[str]:
     devices_root = root / "devices"
     device_files = sorted(devices_root.rglob("*.y*ml")) if devices_root.is_dir() else []
     for device_file in device_files:
+        rel = device_file.relative_to(root)
         try:
             doc = yaml.safe_load(device_file.read_text(encoding="utf-8"))
         except yaml.YAMLError as exc:
-            errors.append(f"{device_file}: invalid YAML: {exc}")
+            errors.append(f"{rel}: invalid YAML: {exc}")
             continue
-        rel = device_file.relative_to(root)
+        except (OSError, UnicodeError) as exc:
+            errors.append(f"{rel}: unreadable file: {exc}")
+            continue
         if not isinstance(doc, dict):
             errors.append(f"{rel}: expected a YAML mapping")
             continue
@@ -106,6 +122,9 @@ def validate_inventory_tree(root: Path) -> list[str]:
             errors.append(
                 f"{rel}: external_id {doc.get('external_id')!r} must equal file stem {device_file.stem!r}"
             )
+        name = doc.get("name")
+        if not (isinstance(name, str) and name.strip()):
+            errors.append(f"{rel}: device is missing a non-blank name")
         if not doc.get("mgmt_host"):
             errors.append(f"{rel}: device is missing mgmt_host")
         site = doc.get("site")
