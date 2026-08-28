@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+schema_version: 1
+kind: site
+external_id: dc1
+name: Lab DC1
+location: Lab datacenter (OSPF area 1, backbone ABRs)
+tags:
+  env: demo
+  site_type: datacenter
+  ospf_area: "1"

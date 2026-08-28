@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+schema_version: 1
+kind: device
+external_id: dc2-srv-01
+name: dc2-srv-01
+mgmt_host: 172.20.30.44
+mgmt_port: 22
+platform: linux
+vendor: Alpine
+model: lab-host
+site: virtual-lab/dc2
+role: server
+tags:
+  - lab
+  - linux
+  - server
+custom_fields:
+  lan_ip: 10.104.1.10
+  description: Endpoint host on the dc2 access LAN

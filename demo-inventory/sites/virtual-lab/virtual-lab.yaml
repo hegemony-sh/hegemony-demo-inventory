@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Git inventory source of truth for Meridian's virtual lab. This tree is read
+# by the "lab-inventory" git provider straight from this public repository
+# (hegemony-demo-inventory). Site paths are derived from the layout: this file
+# names the root lab site ("virtual-lab"); the dc1/ br1/ br2/ subdirectories
+# define child sites ("virtual-lab/dc1", ...), and device files reference
+# sites by those derived paths.
+schema_version: 1
+kind: site
+external_id: virtual-lab
+name: Virtual Lab
+location: Containerlab (FRR, multi-area OSPF)
+tags:
+  env: demo
+  site_type: lab

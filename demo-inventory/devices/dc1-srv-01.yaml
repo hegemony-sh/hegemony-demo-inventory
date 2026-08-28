@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# A Linux endpoint host, not a router: shell.execute logs in over SSH (the
+# provider's shared credentials) and the end-to-end reachability flow pings
+# across the routed fabric from here. lan_ip is its address behind the access
+# router; mgmt_host is the containerlab management address.
+schema_version: 1
+kind: device
+external_id: dc1-srv-01
+name: dc1-srv-01
+mgmt_host: 172.20.30.15
+mgmt_port: 22
+platform: linux
+vendor: Alpine
+model: lab-host
+site: virtual-lab/dc1
+role: server
+tags:
+  - lab
+  - linux
+  - server
+custom_fields:
+  lan_ip: 10.101.1.10
+  description: Endpoint host on the dc1 access LAN

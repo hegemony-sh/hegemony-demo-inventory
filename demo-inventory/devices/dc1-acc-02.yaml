@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+schema_version: 1
+kind: device
+external_id: dc1-acc-02
+name: dc1-acc-02
+mgmt_host: 172.20.30.14
+mgmt_port: 22
+platform: ios-xe
+vendor: FRRouting
+model: frr-lab
+site: virtual-lab/dc1
+role: access
+tags:
+  - lab
+  - frr
+  - access
+custom_fields:
+  ospf_area: "1"
+  ospf_router_id: 10.255.255.6
+  description: Dual-homed access router
