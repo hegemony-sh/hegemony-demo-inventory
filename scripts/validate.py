@@ -27,7 +27,12 @@ from typing import Any
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE_REF_RE = re.compile(r"{{\s*(env|file|secret)\s*\(")
+# Mirrors the platform's access-ref validation (validate_access_config in
+# apps/api/services/inventory/validation.py): a ref must be one full
+# protected-template call — {{ secret(...) }} / {{ env(...) }} /
+# {{ file(...) }} — or one {{ vars.NAME }} reference, nothing more.
+TEMPLATE_CALL_RE = re.compile(r"^\s*\{\{\s*(secret|env|file)\s*\(.*\)\s*\}\}\s*$")
+TEMPLATE_VAR_RE = re.compile(r"^\s*\{\{\s*vars\.[A-Za-z_][A-Za-z0-9_]*\s*\}\}\s*$")
 
 
 def _derive_site_path(sites_root: Path, site_file: Path) -> str:
@@ -53,11 +58,15 @@ def _check_access_refs_templated(location: Any, access_config: Any) -> list[str]
         if not isinstance(section, dict):
             continue
         for key, value in section.items():
-            if key.endswith("_ref") and isinstance(value, str) and not TEMPLATE_REF_RE.search(value):
+            if not (isinstance(key, str) and key.endswith("_ref")) or value is None:
+                continue
+            if not isinstance(value, str) or not (
+                TEMPLATE_CALL_RE.match(value) or TEMPLATE_VAR_RE.match(value)
+            ):
                 errors.append(
-                    f"{location}: {key} must use template syntax like"
-                    " '{{ env(...) }}', '{{ file(...) }}', or '{{ secret(...) }}'"
-                    " — never a literal value"
+                    f"{location}: {key} must be exactly one template reference like"
+                    " '{{ secret(...) }}', '{{ env(...) }}', '{{ file(...) }}', or"
+                    " '{{ vars.NAME }}' — never a literal or partial value"
                 )
     return errors
 
