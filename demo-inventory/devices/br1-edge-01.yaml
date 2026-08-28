@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+schema_version: 1
+kind: device
+external_id: br1-edge-01
+name: br1-edge-01
+mgmt_host: 172.20.30.21
+mgmt_port: 22
+platform: ios-xe
+vendor: FRRouting
+model: frr-lab
+site: virtual-lab/br1
+role: edge
+tags:
+  - lab
+  - frr
+  - edge
+custom_fields:
+  ospf_area: "0/2"
+  ospf_router_id: 10.255.255.3
+  description: Branch ABR (areas 0+2), homed to dc1+dc2

@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Travnik <jakub.travnik@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+extends:
+  - "@commitlint/config-conventional"
+
+rules:
+  scope-enum:
+    - 2
+    - "always"
+    - - ci
+      - data
+      - deps
+      - docs
+      - scripts

@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Travnik <jakub.travnik@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+[project]
+name = "hegemony-demo-inventory"
+version = "0.1.0"
+description = "Git inventory source of truth for the Hegemony demo's lab-inventory provider"
+readme = "README.md"
+license = { text = "AGPL-3.0-or-later" }
+requires-python = ">=3.12"
+dependencies = [
+    "PyYAML==6.0.2",
+]
+
+[dependency-groups]
+dev = [
+    "reuse>=6.2.0",
+]
+
+[tool.uv]
+package = false

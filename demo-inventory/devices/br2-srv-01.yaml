@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+schema_version: 1
+kind: device
+external_id: br2-srv-01
+name: br2-srv-01
+mgmt_host: 172.20.30.33
+mgmt_port: 22
+platform: linux
+vendor: Alpine
+model: lab-host
+site: virtual-lab/br2
+role: server
+tags:
+  - lab
+  - linux
+  - server
+custom_fields:
+  lan_ip: 10.103.1.10
+  description: Endpoint host on the br2 access LAN

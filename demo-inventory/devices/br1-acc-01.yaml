@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+schema_version: 1
+kind: device
+external_id: br1-acc-01
+name: br1-acc-01
+mgmt_host: 172.20.30.22
+mgmt_port: 22
+platform: ios-xe
+vendor: FRRouting
+model: frr-lab
+site: virtual-lab/br1
+role: access
+tags:
+  - lab
+  - frr
+  - access
+custom_fields:
+  ospf_area: "2"
+  ospf_router_id: 10.255.255.7
+  description: Branch access router (serves br1-srv-01)

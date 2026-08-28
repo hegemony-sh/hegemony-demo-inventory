@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+schema_version: 1
+kind: site
+external_id: br1
+name: Lab Branch 1
+location: Lab branch office (OSPF area 2)
+tags:
+  env: demo
+  site_type: branch
+  ospf_area: "2"

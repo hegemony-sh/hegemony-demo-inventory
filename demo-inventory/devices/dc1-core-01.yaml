@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2025-2026 Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# No access_config here: the git provider merges shared SSH credentials from
+# its default_access_config, so device files stay credential-free. mgmt_host
+# matches the static address assigned in the hegemony-demo-data repository's
+# src/files/lab/topology.clab.yml.
+schema_version: 1
+kind: device
+external_id: dc1-core-01
+name: dc1-core-01
+mgmt_host: 172.20.30.11
+mgmt_port: 22
+platform: ios-xe
+vendor: FRRouting
+model: frr-lab
+site: virtual-lab/dc1
+role: core
+tags:
+  - lab
+  - frr
+  - core
+custom_fields:
+  ospf_area: "0/1"
+  ospf_router_id: 10.255.255.1
+  description: Backbone ABR (areas 0+1)

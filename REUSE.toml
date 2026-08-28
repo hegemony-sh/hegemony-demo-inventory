@@ -1,0 +1,16 @@
+version = 1
+SPDX-PackageName = "hegemony-demo-inventory"
+SPDX-PackageSupplier = "Jakub Travnik <jakub.travnik@gmail.com>"
+SPDX-PackageDownloadLocation = "https://github.com/hegemony-sh/hegemony-demo-inventory"
+
+[[annotations]]
+path = "uv.lock"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025-2026 Jakub Travnik <jakub.travnik@gmail.com>"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+path = ".gitignore"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025-2026 Jakub Travnik <jakub.travnik@gmail.com>"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
