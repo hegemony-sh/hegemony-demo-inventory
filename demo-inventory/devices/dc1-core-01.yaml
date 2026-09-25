@@ -12,8 +12,9 @@ name: dc1-core-01
 mgmt_host: 172.20.30.11
 mgmt_port: 22
 platform: ios-xe
-vendor: FRRouting
-model: frr-lab
+attributes:
+  vendor: FRRouting
+  model: frr-lab
 site: virtual-lab/dc1
 role: core
 tags:
