@@ -7,8 +7,9 @@ name: dc1-acc-02
 mgmt_host: 172.20.30.14
 mgmt_port: 22
 platform: ios-xe
-vendor: FRRouting
-model: frr-lab
+attributes:
+  vendor: FRRouting
+  model: frr-lab
 site: virtual-lab/dc1
 role: access
 tags:

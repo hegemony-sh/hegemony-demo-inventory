@@ -38,8 +38,12 @@ demo-inventory/
   template syntax, never a literal.
 
 The records use the git inventory plugin's `schema_version: 1` format
-(`kind: site` / `kind: device`, `external_id` equal to the file stem). The
-provider is configured with `path: demo-inventory`, branch `main`.
+(`kind: site` / `kind: device`, `external_id` equal to the file stem).
+Descriptive facts such as `vendor` and `model` go under a device's
+`attributes:` mapping, not at the top level: the plugin rejects any key its
+schema does not know, and one rejected file fails the whole sync. The provider
+is configured with `path: demo-inventory` and a release tag of this repository
+as its branch.
 
 ## Validation
 
@@ -51,15 +55,18 @@ uv run python scripts/validate.py
 `scripts/validate.py` applies the same fail-closed rules the git inventory
 plugin enforces at runtime (schema version, external-id/file-stem equality,
 the plugin's required fields — non-blank `name` on sites and devices,
-`mgmt_host` on devices — resolved site references, templated access refs), so
-a broken tree fails CI here instead of failing the demo's inventory sync.
-Fields the plugin schema treats as optional (`mgmt_port`, `platform`,
-`vendor`, `model`, `site`, `role`) are optional here too.
+`mgmt_host` on devices — no keys the plugin schema does not know, resolved
+site references, templated access refs), so a broken tree fails CI here
+instead of failing the demo's inventory sync. Fields the plugin schema treats
+as optional (`mgmt_port`, `platform`, `attributes`, `site`, `role`) are
+optional here too.
 
 ## Making changes
 
-Changes to `main` are picked up by running demo instances on their next
-inventory sync — there are no releases; the provider tracks `main`. Keep the
+The demo reads this repository at a release tag (`vYYYY.MM.DD`), not at
+`main`, so a change reaches it only once it is tagged and
+`hegemony-demo-data` bumps its pin to that tag (its `docs/release.md` says
+how). Keep the
 tree consistent with the lab topology defined in `hegemony-demo-data`
 (`src/files/lab/topology.clab.yml`): management addresses here must match the
 addresses containerlab assigns there.

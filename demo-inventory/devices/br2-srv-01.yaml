@@ -7,8 +7,9 @@ name: br2-srv-01
 mgmt_host: 172.20.30.33
 mgmt_port: 22
 platform: linux
-vendor: Alpine
-model: lab-host
+attributes:
+  vendor: Alpine
+  model: lab-host
 site: virtual-lab/br2
 role: server
 tags:

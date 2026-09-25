@@ -9,9 +9,10 @@ Applies the same fail-closed rules Hegemony's git inventory plugin enforces at
 runtime, so the published source of truth cannot silently drift: schema_version
 1, ``external_id`` equal to the file stem, the fields the plugin schema
 requires (non-blank ``name`` on sites and devices, ``mgmt_host`` on devices),
-resolved site references, and templated (never literal) access-config refs.
-Fields the plugin treats as optional (``mgmt_port``, ``platform``, ``vendor``,
-``model``, ``site``, ``role``) stay optional here too.
+no fields the plugin schema does not know, resolved site references, and
+templated (never literal) access-config refs. Fields the plugin treats as
+optional (``mgmt_port``, ``platform``, ``attributes``, ``site``, ``role``) stay
+optional here too.
 
 Ported from the ``hegemony-demo-data`` repository's ``scripts/validate.py``,
 which guarded this tree before it moved into its own repository.
@@ -34,6 +35,44 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE_CALL_RE = re.compile(r"^\s*\{\{\s*(secret|env|file)\s*\(.*\)\s*\}\}\s*$")
 TEMPLATE_VAR_RE = re.compile(r"^\s*\{\{\s*vars\.[A-Za-z_][A-Za-z0-9_]*\s*\}\}\s*$")
 
+# The keys the git inventory plugin's schema v1 accepts. Its models forbid
+# anything else, and one unknown key fails the whole provider sync -- which is
+# how top-level ``vendor``/``model`` broke the demo when the plugin moved them
+# under ``attributes``. Mirrors GitInventorySiteV1, GitInventoryDeviceV1,
+# GitInventoryAccessConfigV1 and GitInventoryJumpHostV1 in
+# hegemony-inventory-plugins (plugins/inventory_git/.../inventory_schema.py).
+SITE_KEYS = frozenset(
+    {
+        "schema_version",
+        "kind",
+        "external_id",
+        "name",
+        "description",
+        "location",
+        "tags",
+        "custom_fields",
+    }
+)
+DEVICE_KEYS = frozenset(
+    {
+        "schema_version",
+        "kind",
+        "external_id",
+        "name",
+        "mgmt_host",
+        "mgmt_port",
+        "platform",
+        "attributes",
+        "site",
+        "role",
+        "tags",
+        "access_config",
+        "custom_fields",
+    }
+)
+ACCESS_CONFIG_KEYS = frozenset({"ssh", "enable", "jump_host"})
+JUMP_HOST_KEYS = frozenset({"host", "port", "username_ref", "password_ref", "private_key_ref"})
+
 
 def _derive_site_path(sites_root: Path, site_file: Path) -> str:
     """Derive a git-inventory site path from a site file's location.
@@ -48,6 +87,27 @@ def _derive_site_path(sites_root: Path, site_file: Path) -> str:
     if site_file.stem == site_file.parent.name:
         return dir_path
     return f"{dir_path}/{site_file.stem}" if dir_path != "." else site_file.stem
+
+
+def _check_known_keys(location: Any, doc: dict[str, Any], allowed: frozenset[str]) -> list[str]:
+    unknown = sorted(str(key) for key in doc if key not in allowed)
+    if not unknown:
+        return []
+    return [f"{location}: unknown field(s) {', '.join(unknown)}; the plugin schema rejects them"]
+
+
+def _check_access_config_keys(location: Any, access_config: Any) -> list[str]:
+    if access_config is None:
+        return []
+    if not isinstance(access_config, dict):
+        return [f"{location}: access_config must be a mapping"]
+    errors = _check_known_keys(f"{location} access_config", access_config, ACCESS_CONFIG_KEYS)
+    jump_host = access_config.get("jump_host")
+    if isinstance(jump_host, dict):
+        errors.extend(
+            _check_known_keys(f"{location} access_config.jump_host", jump_host, JUMP_HOST_KEYS)
+        )
+    return errors
 
 
 def _check_access_refs_templated(location: Any, access_config: Any) -> list[str]:
@@ -104,6 +164,7 @@ def validate_inventory_tree(root: Path) -> list[str]:
         name = doc.get("name")
         if not (isinstance(name, str) and name.strip()):
             errors.append(f"{rel}: site is missing a non-blank name")
+        errors.extend(_check_known_keys(rel, doc, SITE_KEYS))
         site_paths.add(_derive_site_path(sites_root, site_file))
     if not site_files:
         errors.append(f"{root}: no site files found under sites/")
@@ -136,6 +197,10 @@ def validate_inventory_tree(root: Path) -> list[str]:
             errors.append(f"{rel}: device is missing a non-blank name")
         if not doc.get("mgmt_host"):
             errors.append(f"{rel}: device is missing mgmt_host")
+        errors.extend(_check_known_keys(rel, doc, DEVICE_KEYS))
+        if not isinstance(doc.get("attributes", {}), dict):
+            errors.append(f"{rel}: attributes must be a mapping")
+        errors.extend(_check_access_config_keys(rel, doc.get("access_config")))
         site = doc.get("site")
         if site is not None and site not in site_paths:
             errors.append(f"{rel}: references unknown site {site!r}")
