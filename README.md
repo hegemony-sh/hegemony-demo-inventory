@@ -1,5 +1,6 @@
 <!--
-SPDX-FileCopyrightText: 2025-2026 Jakub Travnik <jakub.travnik@gmail.com>
+SPDX-FileCopyrightText: 2025-2026 Rexonix s.r.o.
+SPDX-FileContributor: Jakub Travnik <jakub.travnik@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -74,4 +75,4 @@ addresses containerlab assigns there.
 ## License
 
 AGPL-3.0-or-later, same as the other Hegemony repositories — see
-[LICENSE](LICENSE). Copyright (C) 2025-2026 Jakub Travnik.
+[LICENSE](LICENSE). Copyright (C) 2025-2026 Rexonix s.r.o. Written by Jakub Trávník.
