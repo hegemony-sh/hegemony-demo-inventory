@@ -1,0 +1,53 @@
+# The Hegemony demo lab's inventory. hegemony-demo checks it against its spec/basic.yaml.
+schema_version: 1
+kind: object_type
+id: demo.service_address
+display_name: Service address
+plural: Service addresses
+group: Service catalogue
+field_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - service_id
+  - address
+  - prefix_length
+  - purpose
+  properties:
+    service_id:
+      type: string
+    address:
+      type: string
+    prefix_length:
+      type: integer
+      minimum: 0
+      maximum: 32
+    purpose:
+      type: string
+      enum:
+      - primary
+      - replacement
+relationships:
+- rel: service
+  target_object_type: demo.service
+  required: true
+  many: false
+filters:
+- service_id
+- purpose
+ui:
+  columns:
+  - name
+  - service_id
+  - address
+  - prefix_length
+  - purpose
+  detail_layout:
+  - service_id
+  - address
+  - prefix_length
+  - purpose
+  search_fields:
+  - address
+  - service_id
+  default_sort: name

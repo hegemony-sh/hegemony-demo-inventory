@@ -14,3 +14,12 @@ path = ".gitignore"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2025-2026 Rexonix s.r.o."
 SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# The inventory: YAML records the Git inventory plugin reads, kept free of
+# per-file license headers so they stay identical to the records the demo
+# expects.
+[[annotations]]
+path = "inventory/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Rexonix s.r.o."
+SPDX-License-Identifier = "AGPL-3.0-or-later"

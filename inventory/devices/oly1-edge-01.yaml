@@ -1,0 +1,17 @@
+# The Hegemony demo lab's inventory. hegemony-demo checks it against its spec/basic.yaml.
+schema_version: 1
+kind: device
+external_id: oly1-edge-01
+name: oly1-edge-01
+mgmt_host: 10.90.2.1
+platform: junos
+attributes:
+  vendor: Juniper
+  model: MX204
+  serial: DEMO6253DCC7
+  loopback: 10.255.0.7
+site: oly1
+role: edge
+tags:
+- edge
+- planned

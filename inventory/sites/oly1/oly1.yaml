@@ -1,0 +1,10 @@
+# The Hegemony demo lab's inventory. hegemony-demo checks it against its spec/basic.yaml.
+schema_version: 1
+kind: site
+external_id: oly1
+name: Olympia
+description: Datacenter site of Amphictyon Networks, planned.
+location: Phocis, Hellas
+tags:
+  group: datacenter
+  status: planned

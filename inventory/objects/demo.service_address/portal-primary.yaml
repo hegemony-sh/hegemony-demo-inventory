@@ -1,0 +1,15 @@
+# The Hegemony demo lab's inventory. hegemony-demo checks it against its spec/basic.yaml.
+schema_version: 1
+kind: object
+object_type: demo.service_address
+external_id: portal-primary
+name: Portal primary address
+attributes:
+  service_id: portal
+  address: 10.255.100.20
+  prefix_length: 32
+  purpose: primary
+relationships:
+- rel: service
+  target_object_type: demo.service
+  target_external_id: portal

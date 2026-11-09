@@ -1,0 +1,17 @@
+# The Hegemony demo lab's inventory. hegemony-demo checks it against its spec/basic.yaml.
+schema_version: 1
+kind: object
+object_type: demo.service
+external_id: portal
+name: Customer portal
+attributes:
+  owner: Amphictyon NOC
+  environment: production
+  port: 443
+  enabled: true
+  labels:
+  - customer-facing
+  - routed
+  settings:
+    verification_timeout_seconds: 120
+    require_approval: true

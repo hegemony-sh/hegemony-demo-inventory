@@ -1,0 +1,17 @@
+# The Hegemony demo lab's inventory. hegemony-demo checks it against its spec/basic.yaml.
+schema_version: 1
+kind: device
+external_id: oly1-core-01
+name: oly1-core-01
+mgmt_host: 10.90.2.2
+platform: eos
+attributes:
+  vendor: Arista
+  model: 7280R3
+  serial: DEMO3958F02A
+  loopback: 10.255.0.8
+site: oly1
+role: core
+tags:
+- core
+- planned
