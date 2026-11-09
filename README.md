@@ -64,7 +64,7 @@ The demo reads this repository at a release tag (`vYYYY.MM.DD`), not at
 
 1. Change `inventory/` here and tag a release.
 2. In the demo, change `spec/basic.yaml` to match, if needed, and pin the new
-   tag in `inventory.env`.
+   tag in `platform.env` (`HEGEMONY_INVENTORY_REF`).
 3. The demo's CI (`demo-gen --check-inventory`) checks that the pinned tag
    matches its spec: the sites, devices and service catalogue the demo's
    stories expect, with the addresses its lab uses.
