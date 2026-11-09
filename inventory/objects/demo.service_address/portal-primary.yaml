@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2025-2026 Rexonix s.r.o.
+# SPDX-FileContributor: Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+schema_version: 1
+kind: object
+object_type: demo.service_address
+external_id: portal-primary
+name: Portal primary address
+attributes:
+  service_id: portal
+  address: 10.255.100.20
+  prefix_length: 32
+  purpose: primary
+relationships:
+- rel: service
+  target_object_type: demo.service
+  target_external_id: portal

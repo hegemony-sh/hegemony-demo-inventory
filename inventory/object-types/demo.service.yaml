@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: 2025-2026 Rexonix s.r.o.
+# SPDX-FileContributor: Jakub Trávník <jakub.travnik@gmail.com>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+schema_version: 1
+kind: object_type
+id: demo.service
+display_name: Service
+plural: Services
+group: Service catalogue
+field_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - owner
+  - environment
+  - port
+  - enabled
+  properties:
+    owner:
+      type: string
+    environment:
+      type: string
+      enum:
+      - production
+      - staging
+    port:
+      type: integer
+      minimum: 1
+      maximum: 65535
+    enabled:
+      type: boolean
+    labels:
+      type: array
+      items:
+        type: string
+    settings:
+      type: object
+      additionalProperties: false
+      properties:
+        verification_timeout_seconds:
+          type: integer
+          minimum: 1
+        require_approval:
+          type: boolean
+filters:
+- owner
+- environment
+- enabled
+ui:
+  columns:
+  - name
+  - owner
+  - environment
+  - port
+  - enabled
+  detail_layout:
+  - owner
+  - environment
+  - port
+  - enabled
+  - labels
+  - settings
+  search_fields:
+  - owner
+  - environment
+  default_sort: name

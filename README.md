@@ -7,44 +7,43 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Hegemony Demo Inventory
 
-Git inventory source of truth for the [Hegemony](https://github.com/hegemony-sh/hegemony)
-demo: the site and device records that the demo's `lab-inventory` git
-inventory provider syncs into the platform.
+An example Git inventory repository for [Hegemony](https://github.com/hegemony-sh/hegemony),
+and the inventory the [Hegemony demo](https://github.com/hegemony-sh/hegemony-demo)
+lab runs on. Hegemony's Git inventory provider reads records like these from a
+Git repository and keeps the platform's inventory in step with them.
 
-The [`hegemony-demo-data`](https://github.com/hegemony-sh/hegemony-demo-data)
-repository bootstraps the demo instance with a git repository entry pointing
-here and an enabled git inventory provider reading
-[`demo-inventory/`](demo-inventory) from it. Hegemony clones this repository
-**anonymously over HTTPS from inside the platform containers**, which is why
-the tree lives in its own always-public repository: the provider works on the
-first startup sync with zero credentials, independent of the visibility of the
-other Hegemony repositories.
+The demo pins a release tag of this repository. When the lab starts, it
+copies [`inventory/`](inventory) from that tag into the lab's Git server
+(Gitea, `netops/inventory`), and the demo's Git inventory provider syncs it
+from there. All names and addresses are made up for the demo.
 
 ## Layout
 
 ```text
-demo-inventory/
-├── sites/      # site records; paths derive from the directory layout
-└── devices/    # device records (schema_version: 1), credential-free
+inventory/
+├── sites/          # site records; a site's path comes from its folder
+├── devices/        # device records, without credentials
+├── object-types/   # inventory types the repository defines (plugin 0.5.0 and later)
+└── objects/        # records of those types, one folder per type
 ```
 
-- **Sites** — the fictional operator Meridian Networks' virtual-lab hierarchy:
-  two lab datacenters and two branches under a root `virtual-lab` site. A file
-  whose stem equals its directory name identifies that directory
-  (`sites/virtual-lab/dc1/dc1.yaml` → site path `virtual-lab/dc1`).
-- **Devices** — the eleven FRR lab routers and four Linux endpoint hosts the
-  demo's containerlab topology deploys. Device files carry **no credentials**:
-  the provider merges shared SSH material via its `default_access_config`, and
-  any `*_ref` value in a device file must use `env()`/`file()`/`secret()`
-  template syntax, never a literal.
+- **Sites:** Olympia (`oly1`), a datacenter that the fictional operator
+  Amphictyon Networks is still planning. A file whose name matches its folder
+  describes that folder (`sites/oly1/oly1.yaml` is the site `oly1`).
+- **Devices:** the two routers planned for Olympia. Device files carry **no
+  credentials**. The provider adds shared SSH settings itself, and any `*_ref`
+  value must be a template such as `{{ secret(...) }}`, never a literal.
+- **Object types and objects:** a small service catalogue. `demo.service`
+  describes a service; `demo.service_address` is an address a service answers
+  on, linked to its service. The demo's "service as code" story picks a
+  service and an address from them.
 
-The records use the git inventory plugin's `schema_version: 1` format
-(`kind: site` / `kind: device`, `external_id` equal to the file stem).
+Every file uses the Git inventory plugin's `schema_version: 1` format. A
+record's `external_id` (an object type's `id`) equals its file name without
+`.yaml`.
 Descriptive facts such as `vendor` and `model` go under a device's
-`attributes:` mapping, not at the top level: the plugin rejects any key its
-schema does not know, and one rejected file fails the whole sync. The provider
-is configured with `path: demo-inventory` and a release tag of this repository
-as its branch.
+`attributes:`. The plugin rejects any key its schema does not know, and one
+rejected file fails the whole sync.
 
 ## Validation
 
@@ -53,24 +52,22 @@ uv sync
 uv run python scripts/validate.py
 ```
 
-`scripts/validate.py` applies the same fail-closed rules the git inventory
-plugin enforces at runtime (schema version, external-id/file-stem equality,
-the plugin's required fields — non-blank `name` on sites and devices,
-`mgmt_host` on devices — no keys the plugin schema does not know, resolved
-site references, templated access refs), so a broken tree fails CI here
-instead of failing the demo's inventory sync. Fields the plugin schema treats
-as optional (`mgmt_port`, `platform`, `attributes`, `site`, `role`) are
-optional here too.
+`scripts/validate.py` applies the same fail-closed rules the plugin applies
+when it syncs: the schema version, file names, required fields, unknown keys,
+site references, templated access refs, object attributes against their
+type's JSON Schema, and links between objects. CI runs it on every change.
 
 ## Making changes
 
 The demo reads this repository at a release tag (`vYYYY.MM.DD`), not at
-`main`, so a change reaches it only once it is tagged and
-`hegemony-demo-data` bumps its pin to that tag (its `docs/release.md` says
-how). Keep the
-tree consistent with the lab topology defined in `hegemony-demo-data`
-(`src/files/lab/topology.clab.yml`): management addresses here must match the
-addresses containerlab assigns there.
+`main`. A change reaches the demo in three steps:
+
+1. Change `inventory/` here and tag a release.
+2. In the demo, change `spec/basic.yaml` to match, if needed, and pin the new
+   tag in `platform.env` (`HEGEMONY_INVENTORY_REF`).
+3. The demo's CI (`demo-gen --check-inventory`) checks that the pinned tag
+   matches its spec: the sites, devices and service catalogue the demo's
+   stories expect, with the addresses its lab uses.
 
 ## License
 
