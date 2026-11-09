@@ -8,7 +8,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 # Hegemony demo inventory
 
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-blue.svg)](LICENSE)
-[![DCO: required](https://img.shields.io/badge/DCO-required-blue.svg)](CONTRIBUTING.md#licensing-and-sign-off)
 [![Inventory validation](https://github.com/hegemony-sh/hegemony-demo-inventory/actions/workflows/check.yml/badge.svg?branch=main&event=push)](https://github.com/hegemony-sh/hegemony-demo-inventory/actions/workflows/check.yml)
 [![Latest release](https://img.shields.io/github/v/release/hegemony-sh/hegemony-demo-inventory?label=Release)](https://github.com/hegemony-sh/hegemony-demo-inventory/releases)
 
