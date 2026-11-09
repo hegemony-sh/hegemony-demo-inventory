@@ -5,12 +5,21 @@ SPDX-FileContributor: Jakub Travnik <jakub.travnik@gmail.com>
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-# Hegemony Demo Inventory
+# Hegemony demo inventory
 
-An example Git inventory repository for [Hegemony](https://github.com/hegemony-sh/hegemony),
-and the inventory the [Hegemony demo](https://github.com/hegemony-sh/hegemony-demo)
-lab runs on. Hegemony's Git inventory provider reads records like these from a
-Git repository and keeps the platform's inventory in step with them.
+[![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-blue.svg)](LICENSE)
+[![Inventory validation](https://github.com/hegemony-sh/hegemony-demo-inventory/actions/workflows/check.yml/badge.svg?branch=main&event=push)](https://github.com/hegemony-sh/hegemony-demo-inventory/actions/workflows/check.yml)
+[![Latest release](https://img.shields.io/github/v/release/hegemony-sh/hegemony-demo-inventory?label=Release)](https://github.com/hegemony-sh/hegemony-demo-inventory/releases)
+
+[Website](https://hegemony.sh/) · [Run the demo](https://github.com/hegemony-sh/hegemony-demo) ·
+[Git inventory provider](https://github.com/hegemony-sh/hegemony-inventory-plugins/tree/main/plugins/inventory_git)
+
+An example Git inventory repository for [Hegemony](https://hegemony.sh/),
+supplying the planned site Olympia, its devices and the service catalogue
+used by the [Hegemony demo](https://github.com/hegemony-sh/hegemony-demo).
+The rest of the demo inventory is generated in the demo repository.
+Hegemony's Git inventory provider reads records like these from a Git
+repository and keeps the platform's inventory in step with them.
 
 The demo pins a release tag of this repository. When the lab starts, it
 copies [`inventory/`](inventory) from that tag into the lab's Git server
@@ -45,11 +54,63 @@ Descriptive facts such as `vendor` and `model` go under a device's
 `attributes:`. The plugin rejects any key its schema does not know, and one
 rejected file fails the whole sync.
 
+## Example device
+
+[`inventory/devices/oly1-edge-01.yaml`](inventory/devices/oly1-edge-01.yaml)
+is a complete device record (SPDX comments omitted):
+
+```yaml
+schema_version: 1
+kind: device
+external_id: oly1-edge-01
+name: oly1-edge-01
+mgmt_host: 10.90.2.1
+platform: junos
+attributes:
+  vendor: Juniper
+  model: MX204
+  serial: DEMO6253DCC7
+  loopback: 10.255.0.7
+site: oly1
+role: edge
+tags:
+- edge
+- planned
+```
+
+The `site: oly1` reference resolves to
+[`inventory/sites/oly1/oly1.yaml`](inventory/sites/oly1/oly1.yaml). These
+addresses describe fictional planned devices; importing them does not create
+or start routers.
+
+## Use outside the demo
+
+Use this repository as an example for your own inventory, or register it as a
+Git repository in Hegemony and configure the Git inventory provider with
+`path: inventory`. The provider must be installed in your deployment; see
+its [installation and configuration guide](https://github.com/hegemony-sh/hegemony-inventory-plugins/tree/main/plugins/inventory_git).
+
+Keep credentials in the platform's secret backend and provider access
+configuration. Do not put literal credentials in inventory files. If you
+adapt these records, change the identifiers, sites and addresses together,
+then validate the entire tree before syncing it.
+
+## Compatibility
+
+The records use `schema_version: 1`. Object types and objects require Git
+inventory plugin 0.5.0 or later; choose the plugin release supported by your
+platform. The demo pins its tested inventory tag in `platform.env`, separately
+from the platform and plugin versions.
+
 ## Validation
 
+Requires Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). From a
+checkout of this repository:
+
 ```bash
-uv sync
+uv sync --frozen
 uv run python scripts/validate.py
+uv run reuse lint
 ```
 
 `scripts/validate.py` applies the same fail-closed rules the plugin applies
@@ -69,7 +130,13 @@ The demo reads this repository at a release tag (`vYYYY.MM.DD`), not at
    matches its spec: the sites, devices and service catalogue the demo's
    stories expect, with the addresses its lab uses.
 
-## License
+## Contributing, security and licence
 
-AGPL-3.0-or-later, same as the other Hegemony repositories — see
-[LICENSE](LICENSE). Copyright (C) 2025-2026 Rexonix s.r.o. Written by Jakub Trávník.
+- Report invalid examples or request improvements through
+  [GitHub Issues](https://github.com/hegemony-sh/hegemony-demo-inventory/issues).
+- Read [Contributing](CONTRIBUTING.md) for validation, signed-off commits and
+  the release process.
+- Report vulnerabilities or accidentally published credentials privately;
+  see [Security](SECURITY.md).
+- Participation follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+- Licensed under `AGPL-3.0-or-later`; see [Licensing](LICENSING.md).
