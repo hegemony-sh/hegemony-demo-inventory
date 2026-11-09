@@ -4,19 +4,22 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Validate the git-provider inventory tree under ``demo-inventory/``.
+"""Validate the Git inventory tree under ``inventory/``.
 
-Applies the same fail-closed rules Hegemony's git inventory plugin enforces at
-runtime, so the published source of truth cannot silently drift: schema_version
-1, ``external_id`` equal to the file stem, the fields the plugin schema
-requires (non-blank ``name`` on sites and devices, ``mgmt_host`` on devices),
-no fields the plugin schema does not know, resolved site references, and
-templated (never literal) access-config refs. Fields the plugin treats as
-optional (``mgmt_port``, ``platform``, ``attributes``, ``site``, ``role``) stay
-optional here too.
+Applies the same fail-closed rules Hegemony's Git inventory plugin enforces at
+runtime, so a broken tree fails here instead of failing the demo's inventory
+sync. Sites and devices: schema_version 1, ``external_id`` equal to the file
+stem, the fields the plugin schema requires (non-blank ``name`` on sites and
+devices, ``mgmt_host`` on devices), no fields the plugin schema does not know,
+resolved site references, and templated (never literal) access-config refs.
+Fields the plugin treats as optional (``mgmt_port``, ``platform``,
+``attributes``, ``site``, ``role``) stay optional here too.
 
-Ported from the ``hegemony-demo-data`` repository's ``scripts/validate.py``,
-which guarded this tree before it moved into its own repository.
+Object types (``object-types/<id>.yaml``) and their records
+(``objects/<id>/<external_id>.yaml``, read by plugin 0.5.0 and later): the id
+and external id equal the file stem, a record sits in the folder of a declared
+type, its attributes match that type's ``field_schema`` (JSON Schema), and its
+relationships name declared relationships and existing records.
 """
 
 from __future__ import annotations
@@ -27,6 +30,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import SchemaError
 
 ROOT = Path(__file__).resolve().parents[1]
 # Mirrors the platform's access-ref validation (validate_access_config in
@@ -209,16 +214,120 @@ def validate_inventory_tree(root: Path) -> list[str]:
     if not device_files:
         errors.append(f"{root}: no device files found under devices/")
 
+    errors.extend(_validate_objects(root))
+    return errors
+
+
+def _load(root: Path, path: Path, errors: list[str]) -> dict[str, Any] | None:
+    rel = path.relative_to(root)
+    try:
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        errors.append(f"{rel}: invalid YAML: {exc}")
+        return None
+    except (OSError, UnicodeError) as exc:
+        errors.append(f"{rel}: unreadable file: {exc}")
+        return None
+    if not isinstance(doc, dict):
+        errors.append(f"{rel}: expected a YAML mapping")
+        return None
+    if doc.get("schema_version") != 1:
+        errors.append(f"{rel}: schema_version must be 1")
+    return doc
+
+
+def _validate_objects(root: Path) -> list[str]:
+    """Validate object-types/ and objects/, both optional."""
+    errors: list[str] = []
+    types: dict[str, dict[str, Any]] = {}
+    types_root = root / "object-types"
+    type_files = sorted(types_root.glob("*.y*ml")) if types_root.is_dir() else []
+    for type_file in type_files:
+        rel = type_file.relative_to(root)
+        doc = _load(root, type_file, errors)
+        if doc is None:
+            continue
+        if doc.get("kind") != "object_type":
+            errors.append(f"{rel}: kind must be 'object_type'")
+        if doc.get("id") != type_file.stem:
+            errors.append(f"{rel}: id {doc.get('id')!r} must equal file stem {type_file.stem!r}")
+        schema = doc.get("field_schema")
+        if not isinstance(schema, dict):
+            errors.append(f"{rel}: field_schema must be a mapping")
+            continue
+        try:
+            Draft202012Validator.check_schema(schema)
+        except SchemaError as exc:
+            errors.append(f"{rel}: field_schema is not a valid JSON Schema: {exc.message}")
+            continue
+        types[type_file.stem] = doc
+
+    objects_root = root / "objects"
+    records: dict[tuple[str, str], tuple[Path, dict[str, Any]]] = {}
+    if objects_root.is_dir():
+        for folder in sorted(p for p in objects_root.iterdir() if p.is_dir()):
+            if folder.name not in types:
+                errors.append(
+                    f"{folder.relative_to(root)}: no object type {folder.name!r} under object-types/"
+                )
+                continue
+            for record_file in sorted(folder.glob("*.y*ml")):
+                rel = record_file.relative_to(root)
+                doc = _load(root, record_file, errors)
+                if doc is None:
+                    continue
+                if doc.get("kind") != "object":
+                    errors.append(f"{rel}: kind must be 'object'")
+                if doc.get("object_type") != folder.name:
+                    errors.append(f"{rel}: object_type must be {folder.name!r}, its folder")
+                if doc.get("external_id") != record_file.stem:
+                    errors.append(
+                        f"{rel}: external_id {doc.get('external_id')!r} must equal file stem"
+                        f" {record_file.stem!r}"
+                    )
+                name = doc.get("name")
+                if not (isinstance(name, str) and name.strip()):
+                    errors.append(f"{rel}: object is missing a non-blank name")
+                validator = Draft202012Validator(types[folder.name]["field_schema"])
+                for problem in validator.iter_errors(doc.get("attributes", {})):
+                    where = "/".join(str(p) for p in problem.absolute_path) or "attributes"
+                    errors.append(f"{rel}: {where}: {problem.message}")
+                records[(folder.name, record_file.stem)] = (rel, doc)
+
+    for (type_id, _), (rel, doc) in records.items():
+        declared = {r.get("rel"): r for r in types[type_id].get("relationships", [])}
+        named: dict[str, int] = {}
+        for link in doc.get("relationships", []):
+            rel_name = link.get("rel")
+            spec = declared.get(rel_name)
+            if spec is None:
+                errors.append(f"{rel}: relationship {rel_name!r} is not declared by {type_id}")
+                continue
+            named[rel_name] = named.get(rel_name, 0) + 1
+            target = (link.get("target_object_type"), link.get("target_external_id"))
+            if target[0] != spec.get("target_object_type"):
+                errors.append(
+                    f"{rel}: relationship {rel_name!r} must target {spec.get('target_object_type')}"
+                )
+            elif target not in records:
+                errors.append(f"{rel}: relationship {rel_name!r} names no record {target[1]!r}")
+        for rel_name, spec in declared.items():
+            count = named.get(rel_name, 0)
+            if spec.get("required") and count == 0:
+                errors.append(f"{rel}: required relationship {rel_name!r} is missing")
+            if not spec.get("many", False) and count > 1:
+                errors.append(f"{rel}: relationship {rel_name!r} allows one target")
     return errors
 
 
 def main() -> int:
-    errors = validate_inventory_tree(ROOT / "demo-inventory")
+    tree = ROOT / "inventory"
+    errors = validate_inventory_tree(tree)
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
     if errors:
         return 1
-    print(f"validated {ROOT / 'demo-inventory'}")
+    print(f"validated {tree}")
     return 0
 
 

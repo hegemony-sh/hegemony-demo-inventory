@@ -6,11 +6,12 @@
 [project]
 name = "hegemony-demo-inventory"
 version = "0.1.0"
-description = "Git inventory source of truth for the Hegemony demo's lab-inventory provider"
+description = "An example Git inventory repository: the Hegemony demo lab's inventory"
 readme = "README.md"
 license = { text = "AGPL-3.0-or-later" }
 requires-python = ">=3.12"
 dependencies = [
+    "jsonschema==4.26.0",
     "PyYAML==6.0.2",
 ]
 
