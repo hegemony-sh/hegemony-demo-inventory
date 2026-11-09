@@ -39,7 +39,8 @@ inventory/
   service and an address from them.
 
 Every file uses the Git inventory plugin's `schema_version: 1` format. A
-record's `external_id` (an object type's `id`) equals its file name.
+record's `external_id` (an object type's `id`) equals its file name without
+`.yaml`.
 Descriptive facts such as `vendor` and `model` go under a device's
 `attributes:`. The plugin rejects any key its schema does not know, and one
 rejected file fails the whole sync.

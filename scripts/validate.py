@@ -17,9 +17,10 @@ Fields the plugin treats as optional (``mgmt_port``, ``platform``,
 
 Object types (``object-types/<id>.yaml``) and their records
 (``objects/<id>/<external_id>.yaml``, read by plugin 0.5.0 and later): the id
-and external id equal the file stem, a record sits in the folder of a declared
-type, its attributes match that type's ``field_schema`` (JSON Schema), and its
-relationships name declared relationships and existing records.
+and external id equal the file stem, no fields the plugin does not know, a
+``field_schema`` within the plugin's JSON Schema subset, a record in the folder
+of a declared type, attributes that match that type's ``field_schema``, and
+relationships that name declared relationships and existing records.
 """
 
 from __future__ import annotations
@@ -236,29 +237,138 @@ def _load(root: Path, path: Path, errors: list[str]) -> dict[str, Any] | None:
     return doc
 
 
+# The keys and the JSON Schema subset the plugin's generic loader accepts.
+# Mirrors TypeDefinition, RelationshipDefinition, Record, Relationship and
+# _KEYWORDS in hegemony-inventory-plugins (plugins/inventory_git/.../generic.py).
+OBJECT_TYPE_KEYS = frozenset(
+    {
+        "schema_version",
+        "kind",
+        "id",
+        "display_name",
+        "plural",
+        "description",
+        "group",
+        "field_schema",
+        "relationships",
+        "ui",
+        "filters",
+    }
+)
+RELATIONSHIP_DEFINITION_KEYS = frozenset(
+    {"rel", "target_object_type", "label", "many", "required"}
+)
+OBJECT_KEYS = frozenset(
+    {
+        "schema_version",
+        "kind",
+        "object_type",
+        "external_id",
+        "name",
+        "display_name",
+        "attributes",
+        "relationships",
+    }
+)
+RELATIONSHIP_KEYS = frozenset({"rel", "target_object_type", "target_external_id"})
+SCHEMA_KEYWORDS = frozenset(
+    {
+        "type",
+        "properties",
+        "required",
+        "additionalProperties",
+        "items",
+        "enum",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "minLength",
+        "maxLength",
+        "minItems",
+        "maxItems",
+        "minProperties",
+        "maxProperties",
+        "title",
+        "description",
+    }
+)
+
+
+def _check_schema_subset(location: Any, schema: Any, path: str = "field_schema") -> list[str]:
+    """The plugin's own schema rules on top of JSON Schema: a bounded keyword set."""
+    if not isinstance(schema, dict):
+        return [f"{location}: {path} must be a mapping"]
+    errors: list[str] = []
+    unsupported = sorted(set(schema) - SCHEMA_KEYWORDS)
+    if unsupported:
+        errors.append(f"{location}: {path}: keyword(s) the plugin does not support: {unsupported}")
+    if "type" not in schema:
+        errors.append(f"{location}: {path}.type is required")
+    properties = schema.get("properties", {})
+    if isinstance(properties, dict):
+        for key, child in properties.items():
+            if not key or "." in str(key):
+                errors.append(f"{location}: {path}.properties: names must be nonempty, no dots")
+            errors.extend(_check_schema_subset(location, child, f"{path}.properties.{key}"))
+    if "items" in schema:
+        errors.extend(_check_schema_subset(location, schema["items"], f"{path}.items"))
+    if isinstance(schema.get("additionalProperties"), dict):
+        errors.extend(
+            _check_schema_subset(
+                location, schema["additionalProperties"], f"{path}.additionalProperties"
+            )
+        )
+    return errors
+
+
+def _mapping_list(location: Any, value: Any, what: str, errors: list[str]) -> list[dict[str, Any]]:
+    """value as a list of mappings; anything else is reported and read as empty."""
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
+        errors.append(f"{location}: {what} must be a list of mappings")
+        return []
+    return value
+
+
 def _validate_objects(root: Path) -> list[str]:
     """Validate object-types/ and objects/, both optional."""
     errors: list[str] = []
     types: dict[str, dict[str, Any]] = {}
+    # Declared types that failed validation: their records are not checked
+    # again, so one broken type reports once rather than once per record.
+    broken: set[str] = set()
     types_root = root / "object-types"
     type_files = sorted(types_root.glob("*.y*ml")) if types_root.is_dir() else []
     for type_file in type_files:
         rel = type_file.relative_to(root)
         doc = _load(root, type_file, errors)
         if doc is None:
+            broken.add(type_file.stem)
             continue
+        found = len(errors)
         if doc.get("kind") != "object_type":
             errors.append(f"{rel}: kind must be 'object_type'")
         if doc.get("id") != type_file.stem:
             errors.append(f"{rel}: id {doc.get('id')!r} must equal file stem {type_file.stem!r}")
+        name = doc.get("display_name")
+        if not (isinstance(name, str) and name.strip()):
+            errors.append(f"{rel}: object type is missing a non-blank display_name")
+        errors.extend(_check_known_keys(rel, doc, OBJECT_TYPE_KEYS))
+        for definition in _mapping_list(rel, doc.get("relationships"), "relationships", errors):
+            errors.extend(
+                _check_known_keys(f"{rel} relationship", definition, RELATIONSHIP_DEFINITION_KEYS)
+            )
         schema = doc.get("field_schema")
-        if not isinstance(schema, dict):
-            errors.append(f"{rel}: field_schema must be a mapping")
-            continue
-        try:
-            Draft202012Validator.check_schema(schema)
-        except SchemaError as exc:
-            errors.append(f"{rel}: field_schema is not a valid JSON Schema: {exc.message}")
+        errors.extend(_check_schema_subset(rel, schema))
+        if isinstance(schema, dict):
+            try:
+                Draft202012Validator.check_schema(schema)
+            except SchemaError as exc:
+                errors.append(f"{rel}: field_schema is not a valid JSON Schema: {exc.message}")
+        if len(errors) > found:
+            broken.add(type_file.stem)
             continue
         types[type_file.stem] = doc
 
@@ -266,6 +376,8 @@ def _validate_objects(root: Path) -> list[str]:
     records: dict[tuple[str, str], tuple[Path, dict[str, Any]]] = {}
     if objects_root.is_dir():
         for folder in sorted(p for p in objects_root.iterdir() if p.is_dir()):
+            if folder.name in broken:
+                continue
             if folder.name not in types:
                 errors.append(
                     f"{folder.relative_to(root)}: no object type {folder.name!r} under object-types/"
@@ -288,16 +400,24 @@ def _validate_objects(root: Path) -> list[str]:
                 name = doc.get("name")
                 if not (isinstance(name, str) and name.strip()):
                     errors.append(f"{rel}: object is missing a non-blank name")
-                validator = Draft202012Validator(types[folder.name]["field_schema"])
-                for problem in validator.iter_errors(doc.get("attributes", {})):
-                    where = "/".join(str(p) for p in problem.absolute_path) or "attributes"
-                    errors.append(f"{rel}: {where}: {problem.message}")
+                errors.extend(_check_known_keys(rel, doc, OBJECT_KEYS))
+                attributes = doc.get("attributes", {})
+                if not isinstance(attributes, dict):
+                    errors.append(f"{rel}: attributes must be a mapping")
+                else:
+                    validator = Draft202012Validator(types[folder.name]["field_schema"])
+                    for problem in validator.iter_errors(attributes):
+                        where = "/".join(str(p) for p in problem.absolute_path) or "attributes"
+                        errors.append(f"{rel}: {where}: {problem.message}")
                 records[(folder.name, record_file.stem)] = (rel, doc)
 
     for (type_id, _), (rel, doc) in records.items():
-        declared = {r.get("rel"): r for r in types[type_id].get("relationships", [])}
+        declared = {
+            r.get("rel"): r for r in _mapping_list(rel, types[type_id].get("relationships"), "", [])
+        }
         named: dict[str, int] = {}
-        for link in doc.get("relationships", []):
+        for link in _mapping_list(rel, doc.get("relationships"), "relationships", errors):
+            errors.extend(_check_known_keys(f"{rel} relationship", link, RELATIONSHIP_KEYS))
             rel_name = link.get("rel")
             spec = declared.get(rel_name)
             if spec is None:
@@ -318,7 +438,6 @@ def _validate_objects(root: Path) -> list[str]:
             if not spec.get("many", False) and count > 1:
                 errors.append(f"{rel}: relationship {rel_name!r} allows one target")
     return errors
-
 
 def main() -> int:
     tree = ROOT / "inventory"
