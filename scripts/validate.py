@@ -347,12 +347,19 @@ def _yaml_files(section: Path) -> list[Path]:
 
 
 def _schema_type(schema: dict[str, Any], name: str) -> list[str] | None:
-    """The JSON types of a top-level attribute, or None when it is not declared."""
+    """The JSON types of a top-level attribute, or None when it is not declared.
+
+    An empty list is a declared attribute whose type is malformed."""
     properties = schema.get("properties")
     if not isinstance(properties, dict) or "." in name or not isinstance(properties.get(name), dict):
         return None
     kinds = properties[name].get("type", [])
-    return [kinds] if isinstance(kinds, str) else list(kinds)
+    kinds = [kinds] if isinstance(kinds, str) else kinds
+    # A malformed type is reported by the schema checks: the attribute is
+    # declared, with no type the scalar checks can read.
+    if not isinstance(kinds, list) or not all(isinstance(k, str) for k in kinds):
+        return []
+    return kinds
 
 
 def _check_type_metadata(location: Any, doc: dict[str, Any]) -> list[str]:
@@ -375,12 +382,17 @@ def _check_type_metadata(location: Any, doc: dict[str, Any]) -> list[str]:
         errors.append(f"{location}: field_schema is not a valid JSON Schema: {exc.message}")
     definitions = _mapping_list(location, doc.get("relationships"), "relationships", errors)
     names = [d.get("rel") for d in definitions]
-    if len(set(names)) != len(names):
+    if not all(isinstance(n, str) and n for n in names):
+        errors.append(f"{location}: relationships: every rel must be a non-empty string")
+    elif len(set(names)) != len(names):
         errors.append(f"{location}: relationships: duplicate relation name")
     for definition in definitions:
         errors.extend(
             _check_known_keys(f"{location} relationship", definition, RELATIONSHIP_DEFINITION_KEYS)
         )
+        target = definition.get("target_object_type")
+        if not (isinstance(target, str) and target):
+            errors.append(f"{location}: relationships: target_object_type must be a non-empty string")
     ui = doc.get("ui", {})
     if not isinstance(ui, dict):
         return [*errors, f"{location}: ui must be a mapping"]
@@ -513,6 +525,12 @@ def _validate_objects(root: Path) -> list[str]:
             errors.extend(_check_known_keys(f"{rel} relationship", link, RELATIONSHIP_KEYS))
             rel_name = link.get("rel")
             target = (link.get("target_object_type"), link.get("target_external_id"))
+            if not all(isinstance(v, str) and v for v in (rel_name, *target)):
+                errors.append(
+                    f"{rel}: relationship rel, target_object_type and target_external_id"
+                    " must be non-empty strings"
+                )
+                continue
             edge = (rel_name, *target)
             if edge in seen:
                 errors.append(f"{rel}: relationship {rel_name!r} to {target[1]!r} is listed twice")
