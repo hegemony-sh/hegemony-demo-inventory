@@ -60,6 +60,10 @@ Contributions are accepted under `AGPL-3.0-or-later`, with no copyright
 assignment or Contributor License Agreement. Keep SPDX metadata on changed
 files and add it to new files; see [Licensing](LICENSING.md).
 
+The one exception is the [Code of Conduct](CODE_OF_CONDUCT.md): it is adapted
+third-party documentation under `CC-BY-4.0`, and changes to it are contributed
+under `CC-BY-4.0`. Preserve its attribution and licence when editing it.
+
 A sign-off certifies the [Developer Certificate of Origin](https://developercertificate.org/)
 version 1.1. The name and email in `Signed-off-by:` must match the commit
 author. For work written with an AI coding agent, the person directing and
