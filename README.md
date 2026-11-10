@@ -97,8 +97,9 @@ then validate the entire tree before syncing it.
 
 ## Compatibility
 
-The records use `schema_version: 1`. Object types and objects require Git
-inventory plugin 0.5.0 or later; choose the plugin release supported by your
+The records use `schema_version: 1`. Object types and objects (see the
+plugin's [generic objects guide](https://github.com/hegemony-sh/hegemony-inventory-plugins/blob/main/plugins/inventory_git/GENERIC_OBJECTS.md))
+require Git inventory plugin 0.5.0 or later; choose the plugin release supported by your
 platform. The demo pins its tested inventory tag in `platform.env`, separately
 from the platform and plugin versions.
 
