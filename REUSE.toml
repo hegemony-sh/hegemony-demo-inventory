@@ -4,7 +4,7 @@ SPDX-PackageSupplier = "Rexonix s.r.o."
 SPDX-PackageDownloadLocation = "https://github.com/hegemony-sh/hegemony-demo-inventory"
 
 [[annotations]]
-path = "uv.lock"
+path = ["uv.lock", ".github/renovate.json"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2025-2026 Rexonix s.r.o."
 SPDX-License-Identifier = "AGPL-3.0-or-later"
