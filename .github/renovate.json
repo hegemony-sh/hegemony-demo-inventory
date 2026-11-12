@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate maintains the GitHub Actions pins and the Python dependencies of the validator (pyproject.toml and uv.lock), as in the other hegemony-sh repositories. Every `uses:` is pinned to a commit SHA, and without something bumping them they rot silently. Third-party releases wait a week before they are proposed (minimumReleaseAge); security fixes do not. Its commits are chore(deps), a scope .commitlintrc.yaml allows.",
+  "extends": ["config:recommended", ":semanticCommits", ":semanticCommitTypeAll(chore)"],
+  "timezone": "Etc/UTC",
+  "schedule": ["before 05:00 on monday"],
+  "semanticCommitScope": "deps",
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  "minimumReleaseAge": "7 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
+  "enabledManagers": ["github-actions", "pep621"],
+  "github-actions": {
+    "pinDigests": true
+  },
+  "vulnerabilityAlerts": {
+    "description": "A known vulnerability is not weekly business: these bypass the schedule and are labelled so they stand out.",
+    "labels": ["dependencies", "security"],
+    "schedule": ["at any time"]
+  },
+  "osvVulnerabilityAlerts": true
+}
